@@ -4,10 +4,10 @@ from pydantic import BaseModel, Field
 
 
 class MovieDetailResponseSchema(BaseModel):
-    movie_id: int = Field(..., alias="id")
+    id: int
     name: str
     date: date
-    score: int
+    score: float
     genre: str
     overview: str
     crew: str

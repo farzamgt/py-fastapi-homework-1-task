@@ -2,7 +2,7 @@ import pandas as pd
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
-from tqdm.asyncio import tqdm
+from tqdm import tqdm
 
 from config import get_settings
 from database import MovieModel, get_db_contextmanager, init_db
@@ -42,7 +42,7 @@ class CSVDatabaseSeeder:
         total_count = result.scalar_one()
         return total_count > 0
 
-    async def _preprocess_csv(self) -> pd.DataFrame:
+    def _preprocess_csv_sync(self) -> pd.DataFrame:
         """
         Load and preprocess the CSV file before inserting data into the database.
 
@@ -65,6 +65,9 @@ class CSVDatabaseSeeder:
         print("Preprocessing csv file")
         return data
 
+    async def preprocess_csv(self) -> pd.DataFrame:
+        return await asyncio.to_thread(self._preprocess_csv_sync)
+
     async def seed(self) -> None:
         """
         Seed the database with movie data from the CSV file.
@@ -80,25 +83,23 @@ class CSVDatabaseSeeder:
                 print("Rolling back existing transaction.")
                 await self._db_session.rollback()
 
-            data = await self._preprocess_csv()
+            data = await self.preprocess_csv()
 
             async with self._db_session.begin():
-                for _, row in tqdm(
-                    data.iterrows(), total=data.shape[0], desc="Seeding database"
-                ):
+                for _, row in tqdm(data.iterrows(), total=data.shape[0], desc="Seeding database"):
                     movie = MovieModel(
-                        name=row["names"],
-                        date=row["date_x"],
-                        score=float(row["score"]),
-                        genre=row["genre"],
-                        overview=row["overview"],
-                        crew=row["crew"],
-                        orig_title=row["orig_title"],
-                        status=row["status"],
-                        orig_lang=row["orig_lang"],
-                        budget=float(row["budget_x"]),
-                        revenue=float(row["revenue"]),
-                        country=row["country"],
+                        name=row.names,
+                        date=row.date_x,
+                        score=float(row.score),
+                        genre=row.genre,
+                        overview=row.overview,
+                        crew=row.crew,
+                        orig_title=row.orig_title,
+                        status=row.status,
+                        orig_lang=row.orig_lang,
+                        budget=float(row.budget_x),
+                        revenue=float(row.revenue),
+                        country=row.country,
                     )
                     self._db_session.add(movie)
 

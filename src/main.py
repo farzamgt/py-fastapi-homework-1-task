@@ -4,7 +4,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 
 from database import init_db, close_db
-from routes import movie_router
+from routes.movies import router as movie_router
 
 
 @asynccontextmanager

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db, MovieModel
@@ -15,8 +15,8 @@ async def get_movies(
     per_page: int = Query(10, ge=1, le=20),
     db: AsyncSession = Depends(get_db),
 ) -> MovieListResponseSchema:
-    total_items = (await db.execute(select(MovieModel))).scalars().all()
-    total_count = len(total_items)
+    result = await db.execute(select(func.count()).select_from(MovieModel))
+    total_count = result.scalar_one()
 
     if total_count == 0:
         raise HTTPException(status_code=404, detail="No movies found.")
@@ -37,15 +37,15 @@ async def get_movies(
                 id=m.id,
                 name=m.name,
                 date=m.date,
-                score=m.score,
+                score=float(m.score),
                 genre=m.genre,
                 overview=m.overview,
                 crew=m.crew,
                 orig_title=m.orig_title,
                 status=m.status,
                 orig_lang=m.orig_lang,
-                budget=int(m.budget),
-                revenue=int(m.revenue),
+                budget=float(m.budget),
+                revenue=float(m.revenue),
                 country=m.country,
             )
         )
@@ -89,7 +89,7 @@ async def get_movie_detail(
         orig_title=movie.orig_title,
         status=movie.status,
         orig_lang=movie.orig_lang,
-        budget=int(movie.budget),
-        revenue=int(movie.revenue),
+        budget=float(movie.budget),
+        revenue=float(movie.revenue),
         country=movie.country,
     )
